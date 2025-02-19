@@ -221,7 +221,7 @@ export default function GeneratedData() {
                 </TableHeader>
                 <TableBody>
                   {datasets.map((dataset) => (
-                    <TableRow key={dataset.id}>
+                    <TableRow key={`${dataset.id}-${dataset.timestamp}`}>
                       <TableCell>{dataset.name}</TableCell>
                       <TableCell>{dataset.model}</TableCell>
                       <TableCell>{dataset.timestamp}</TableCell>

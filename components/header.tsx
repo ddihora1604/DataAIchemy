@@ -62,7 +62,7 @@ export default function Header() {
               ) : (
                 notifications.map((notification) => (
                   <DropdownMenuItem
-                    key={notification.id}
+                    key={`${notification.id}-${notification.time}`}
                     className="flex flex-col items-start p-4 space-y-1 cursor-pointer hover:bg-accent border-b last:border-b-0"
                     onClick={() => markAsRead(notification.id)}
                   >

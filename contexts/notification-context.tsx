@@ -82,28 +82,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const addNotification = useCallback((
     title: string, 
     description: string, 
-    type: NotificationType = 'action',
-    immediate: boolean = false
+    type: NotificationType
   ) => {
-    const newNotification = {
-      id: Date.now(),
+    const newNotification: Notification = {
+      id: Date.now() + Math.random(), // Ensure unique ID
       title,
       description,
       time: new Date().toLocaleTimeString(),
       unread: true,
-      type,
+      type
     }
-
-    if (immediate) {
-      // Add immediately for action notifications
-      setNotifications(prev => [newNotification, ...prev])
-    } else {
-      // Add with a random delay for recommendations and insights
-      const delay = Math.random() * 3000 + 2000 // Random delay between 2-5 seconds
-      setTimeout(() => {
-        setNotifications(prev => [newNotification, ...prev])
-      }, delay)
-    }
+    
+    setNotifications(prev => [newNotification, ...prev])
   }, [])
 
   // Random recommendations
@@ -124,8 +114,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             addNotification(
               randomRec.title, 
               randomRec.description, 
-              randomRec.type as NotificationType, 
-              false
+              randomRec.type as NotificationType
             )
             setLastRecommendationTime(now)
           }
