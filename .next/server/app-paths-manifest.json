@@ -1,9 +1,3 @@
 {
-  "/not-found": "app/not-found.js",
-  "/page": "app/page.js",
-  "/generated-data/page": "app/generated-data/page.js",
-  "/analysis/page": "app/analysis/page.js",
-  "/history/page": "app/history/page.js",
-  "/insights/page": "app/insights/page.js",
-  "/ml/page": "app/ml/page.js"
+  "/page": "app/page.js"
 }

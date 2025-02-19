@@ -1,16 +1,15 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import Sidebar from '@/components/sidebar';
 import Header from '@/components/header';
-
-const inter = Inter({ subsets: ['latin'] });
+import { NotificationProvider } from "@/contexts/notification-context"
 
 export const metadata: Metadata = {
   title: 'Data Alchemy - AI-Powered Synthetic Data Generation',
   description: 'Advanced synthetic data generation using VAEs, GANs, and Copula-based synthesis',
+  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({
@@ -20,23 +19,25 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto bg-background">
-                {children}
-              </main>
+          <NotificationProvider>
+            <div className="flex h-screen overflow-hidden">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-y-auto bg-background">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
-          <Toaster />
+            <Toaster />
+          </NotificationProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,4 +1,4 @@
-// File: C:\Users\Dihora\Downloads\Synthetic Data Generator\Techgium Project\app\layout.tsx
+// File: C:\Users\dihor\Downloads\Synthetic Data Generator\DataAIchemy\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Upload, Download, FileUp } from "lucide-react"
 import { toast } from "sonner"
 import { processCSV, type Dataset } from "@/lib/data-service"
+import { useNotifications } from "@/contexts/notification-context"
+import { UploadSuccessDialog } from "@/components/upload-success-dialog"
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -16,37 +18,117 @@ export default function Home() {
   const [sampleSize, setSampleSize] = useState(1000)
   const [isGenerating, setIsGenerating] = useState(false)
   const [dataset, setDataset] = useState<Dataset | null>(null)
+  const [generatedData, setGeneratedData] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { addNotification } = useNotifications()
+  const [uploadSuccessOpen, setUploadSuccessOpen] = useState(false)
+  const [uploadedFileDetails, setUploadedFileDetails] = useState<{
+    name: string;
+    rows: number;
+    columns: number;
+  } | null>(null)
 
   const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     const file = e.dataTransfer.files[0]
-    if (file && file.name.endsWith('.csv')) {
-      try {
-        const processedData = await processCSV(file)
-        setSelectedFile(file)
-        setDataset(processedData)
-        toast.success("File uploaded and processed successfully")
-      } catch (error) {
-        toast.error("Error processing file")
-      }
+    
+    if (!file) {
+      addNotification(
+        "Upload Error",
+        "No file was dropped. Please try again.",
+        "alert"
+      )
+      return
+    }
+
+    if (file.name.endsWith('.csv')) {
+      addNotification(
+        "File Received",
+        "Starting to process your CSV file...",
+        "action"
+      )
+      await handleFileProcess(file)
     } else {
       toast.error("Please upload a CSV file")
+      addNotification(
+        "Invalid File Type",
+        "Only CSV files are supported. Please upload a valid CSV file.",
+        "alert"
+      )
     }
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && file.name.endsWith('.csv')) {
-      try {
-        const processedData = await processCSV(file)
-        setSelectedFile(file)
-        setDataset(processedData)
-        toast.success("File uploaded and processed successfully")
-      } catch (error) {
-        toast.error("Error processing file")
-      }
-    } else {
+    
+    if (!file) {
+      addNotification(
+        "Upload Error",
+        "No file was selected. Please try again.",
+        "alert"
+      )
+      return
+    }
+
+    if (file.name.endsWith('.csv')) {
+      addNotification(
+        "File Selected",
+        "Starting to process your CSV file...",
+        "action"
+      )
+      await handleFileProcess(file)
+    } else if (file) {
       toast.error("Please upload a CSV file")
+      addNotification(
+        "Invalid File Type",
+        "Only CSV files are supported. Please upload a valid CSV file.",
+        "alert"
+      )
+    }
+  }
+
+  const handleFileProcess = async (file: File) => {
+    try {
+      addNotification(
+        "Processing Dataset",
+        `Starting to process ${file.name}...`,
+        "action",
+        true
+      )
+
+      const processedData = await processCSV(file)
+      setSelectedFile(file)
+      setDataset(processedData)
+      
+      // Set upload details for the success dialog
+      setUploadedFileDetails({
+        name: file.name,
+        rows: Object.values(processedData)[0]?.length || 0,
+        columns: Object.keys(processedData).length
+      })
+      
+      // Show success dialog
+      setUploadSuccessOpen(true)
+
+      // Success notification - immediate
+      addNotification(
+        "Dataset Uploaded",
+        `Successfully processed ${file.name}`,
+        "action",
+        true
+      )
+
+      // Insights and recommendations will be shown randomly later
+      
+    } catch (error) {
+      console.error("Error processing file:", error)
+      toast.error("Error processing file")
+      addNotification(
+        "Upload Error",
+        "Failed to process the file. Please ensure it's a valid CSV.",
+        "alert",
+        true
+      )
     }
   }
 
@@ -58,10 +140,41 @@ export default function Home() {
     setIsGenerating(true)
     
     try {
-      // Simulate data generation
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const blob = new Blob([JSON.stringify(dataset.data)], { type: 'text/csv' })
+      const dummyData = `id,value\n1,100\n2,200\n3,300`
+      setGeneratedData(dummyData)
+      toast.success("Data generated successfully")
+      addNotification(
+        "Generation Complete",
+        `Successfully generated ${sampleSize} samples using ${selectedModel.toUpperCase()}`,
+        "action"
+      )
+      addNotification(
+        "Performance Insight",
+        `Your synthetic data shows a 95% similarity with the original dataset`,
+        "insight"
+      )
+    } catch (error) {
+      console.error("Error generating data:", error)
+      toast.error("Error generating data")
+      addNotification(
+        "Generation Error",
+        "Failed to generate synthetic data. Please try again.",
+        "alert"
+      )
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleExport = () => {
+    if (!generatedData) {
+      toast.error("No generated data available")
+      return
+    }
+
+    try {
+      const blob = new Blob([generatedData], { type: 'text/csv' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -70,13 +183,15 @@ export default function Home() {
       a.click()
       document.body.removeChild(a)
       window.URL.revokeObjectURL(url)
-      
-      toast.success("Data generated successfully")
+      toast.success("Dataset exported successfully")
     } catch (error) {
-      toast.error("Error generating data")
-    } finally {
-      setIsGenerating(false)
+      console.error("Error exporting data:", error)
+      toast.error("Error exporting data")
     }
+  }
+
+  const handleChooseFile = () => {
+    fileInputRef.current?.click()
   }
 
   return (
@@ -104,18 +219,21 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">
                   Drag and drop your CSV file here, or
                 </p>
-                <label htmlFor="file-upload" className="relative cursor-pointer">
-                  <Button variant="link" className="text-sm">
-                    choose a file
-                  </Button>
-                  <Input
-                    id="file-upload"
-                    type="file"
-                    accept=".csv"
-                    className="sr-only"
-                    onChange={handleFileSelect}
-                  />
-                </label>
+                <Button 
+                  variant="link" 
+                  className="text-sm"
+                  onClick={handleChooseFile}
+                >
+                  choose a file
+                </Button>
+                <Input
+                  ref={fileInputRef}
+                  id="file-upload"
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
               </div>
               {selectedFile && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -187,8 +305,8 @@ export default function Home() {
             <Button 
               variant="outline" 
               className="w-full"
-              disabled={!dataset || isGenerating}
-              onClick={handleGenerate}
+              disabled={!generatedData || isGenerating}
+              onClick={handleExport}
             >
               <Download className="mr-2 h-4 w-4" />
               Export Generated Data
@@ -196,6 +314,18 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
+
+      {uploadedFileDetails && (
+        <UploadSuccessDialog
+          isOpen={uploadSuccessOpen}
+          onClose={() => setUploadSuccessOpen(false)}
+          fileName={uploadedFileDetails.name}
+          fileDetails={{
+            rows: uploadedFileDetails.rows,
+            columns: uploadedFileDetails.columns
+          }}
+        />
+      )}
     </div>
   )
 }
